@@ -38,36 +38,36 @@ public class TxHandler {
 		// Hier wordt een basis gelegd met initialisatie van de valaues i/o en het transactie Index die erbij hoort.
 		double valueInput = 0.0;
 		double valueOutput = 0.0;
-		int transactionIndex = 0;
+		int transIndex = 0;
 
 		// Dit een loop die door elke transactie heen loopt.
-		for(Transaction.Input input : tx.getInputs()) {
-			UTXO UnspentTransaction = new UTXO(input.prevTxHash, input.outputIndex);
+		for (int i = 0; i < tx.getInputs().size(); i++) {
+			Transaction.Input input = tx.getInput(i);
+			UTXO utxo = new UTXO(input.prevTxHash, input.outputIndex);
 
 			// Er wordt gecontrolleerd of een transactie ook daadwerkelijk bestaat.
-			if (!this.UTXOPool.contains(UnspentTransaction)) {
+			if (!this.UTXOPool.contains(utxo)) {
 				return false;
 			}
 
 			//Het controlleren of de signature dadwerkelijk geldig is verklaard binnen de UTXOPool daarbij of de afzender wel goedgekeurd heeft.
-			RSAKey rsaKey = UTXOPool.getTxOutput(UnspentTransaction).address;
-			if(!rsaKey.verfiySignature(tx.getRawDataToSign(transactionIndex), input.signature)) {
+			RSAKey rsaKey = UTXOPool.getTxOutput(utxo).address;
+
+			if (!rsaKey.verifySignature(tx.getRawDataToSign(i), input.signature)){
 				return false;
 			}
 
+
 			// Checkt of de UTXO daadwerkelijk maar één keer gebruikt is. (Voorkomt double spending attacks)
-			if (UTXOUsed.contains(UnspentTransaction)) {
+			if (UTXOUsed.contains(utxo)) {
 				return false;
 			}
 
 			// Voegt de transactie toe, aan de HashSet vorige transactie Hash en de output index.
-			UTXOUsed.add(UnspentTransaction);
+			UTXOUsed.add(utxo);
 
 			// Voegt de input waarde toe aan de totale som van alle gemaakte inputs.
-			valueInput += UTXOPool.getTxOutput(UnspentTransaction).value;
-
-			// Hoogt de foreach op met een nieuw index getal.
-			transactionIndex++;
+			valueInput += UTXOPool.getTxOutput(utxo).value;
 		}
 
 		// Door loopt alle outputs
